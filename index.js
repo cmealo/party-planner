@@ -9,18 +9,23 @@
 
 // === Constants ===
 const BASE = "https://fsa-crud-2aa9294fe819.herokuapp.com/api";
-const COHORT = "/2507"; // Make sure to change this!
-const RESOURCE = "/events";
-const API = BASE + COHORT + RESOURCE;
+const COHORT = "/2507"; // change to your cohort if needed
+const API = BASE + COHORT; // cohort-level base
+
+const EVENTS_API = API + "/events";
+const GUESTS_API = API + "/guests";
+const RSVPS_API = API + "/rsvps";
 
 // === State ===
 let events = [];
 let selectedEvent;
+let guests = [];
+let rsvps = [];
 
 /** Updates state with all events from the API */
 async function getEvents() {
   try {
-    const response = await fetch(API);
+    const response = await fetch(EVENTS_API);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const eventsdata = await response.json();
@@ -33,13 +38,37 @@ async function getEvents() {
 /** Updates state with a single event from the API */
 async function getEvent(id) {
   try {
-    const response = await fetch(`${API}/${id}`);
+    const response = await fetch(`${EVENTS_API}/${id}`);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const eventdata = await response.json();
     selectedEvent = eventdata.data;
   } catch (e) {
     console.error(`Failed to fetch event!`);
+  }
+}
+
+async function getGuests() {
+  try {
+    const res = await fetch(GUESTS_API);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    guests = data.data;
+  } catch (e) {
+    console.error("Failed to fetch guests!", e);
+    guests = [];
+  }
+}
+
+async function getRsvps() {
+  try {
+    const res = await fetch(RSVPS_API);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    rsvps = data.data;
+  } catch (e) {
+    console.error("Failed to fetch RSVPs!", e);
+    rsvps = [];
   }
 }
 
@@ -54,6 +83,16 @@ function formatDate(dateString) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function guestsForEvent(eventId) {
+  if (!eventId) return [];
+
+  const guestIds = new Set(
+    rsvps.filter((r) => r.eventId === eventId).map((r) => r.guestId)
+  );
+
+  return guests.filter((g) => guestIds.has(g.id));
 }
 
 // === Components ===
@@ -111,6 +150,9 @@ function EventDetails() {
     return $p;
   }
 
+  // create for rsvps attending
+  const attending = guestsForEvent(selectedEvent.id);
+
   // Create container element
   const $sec = document.createElement("section");
 
@@ -124,7 +166,15 @@ function EventDetails() {
         <li><strong>Date:</strong> ${formatDate(selectedEvent.date)}</li>
         <li><strong>Location:</strong> ${selectedEvent.location}</li>
         </ul>
-    `;
+          <h4>Guests</h4>
+      ${
+        attending.length
+          ? `<ul>${attending
+              .map((g) => `<li>${g.name} (${g.email})</li>`)
+              .join("")}</ul>`
+          : `<p>No RSVPs yet.</p>`
+      }
+`;
 
   // Return the container element
   return $sec;
@@ -151,7 +201,8 @@ function render() {
 }
 
 async function init() {
-  await getEvents();
+  // Prefetch everything so EventDetails can show guests immediately
+  await Promise.all([getEvents(), getGuests(), getRsvps()]);
   render();
 }
 

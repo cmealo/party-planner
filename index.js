@@ -21,8 +21,9 @@ let selectedEvent;
 async function getEvents() {
   try {
     const response = await fetch(API);
-    const eventsdata = await response.json();
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
+    const eventsdata = await response.json();
     events = eventsdata.data;
   } catch (e) {
     console.error(`Failed to fetch events!`);
@@ -33,12 +34,26 @@ async function getEvents() {
 async function getEvent(id) {
   try {
     const response = await fetch(`${API}/${id}`);
-    const eventdata = await response.json();
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
+    const eventdata = await response.json();
     selectedEvent = eventdata.data;
   } catch (e) {
     console.error(`Failed to fetch event!`);
   }
+}
+
+// === Utilities ===
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  return date.toLocaleString("en-US", {
+    weekday: "short",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 // === Components ===
@@ -103,10 +118,12 @@ function EventDetails() {
 
   $sec.innerHTML = `
         <h3>${selectedEvent.name}</h3>
-        <figure>
-        <img alt="${selectedEvent.name}" src="${selectedEvent.imageUrl}" />
-        </figure>
         <p>${selectedEvent.description}</p>
+        <ul>
+        <li><strong>ID:</strong> ${selectedEvent.id}</li>
+        <li><strong>Date:</strong> ${formatDate(selectedEvent.date)}</li>
+        <li><strong>Location:</strong> ${selectedEvent.location}</li>
+        </ul>
     `;
 
   // Return the container element

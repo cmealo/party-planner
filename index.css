@@ -1,0 +1,21 @@
+main {
+  display: flex;
+  gap: 2rem; /* add space between the columns */
+  align-items: flex-start;
+}
+
+main section {
+  flex: 1; /* have them share the width equally */
+}
+
+/* simple boarder on left*/
+
+h1 {
+  color: rgb(179, 14, 143);
+  font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+}
+
+#selected {
+  border-left: 1px solid #ccc;
+  padding-left: 1rem;
+}
